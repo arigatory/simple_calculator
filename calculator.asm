@@ -1,56 +1,86 @@
-org 100h
+MAXN equ 128
 
-; add your code here
-    lea ax,msg_hello
+function MACRO function_name,arg1
+    lea ax,arg1
     push ax
-    call print_string
-     
-    lea ax,msg_X
-    push ax
-    call print_string 
+    call function_name
+ENDM
+
+org 100h
     
-    lea ax,x
-    push ax        
-    call read_string    ; x = 'input'
+    function print_string msg_hello
     
-    lea ax,msg_newline
-    push ax
-    call print_string
+    function print_string msg_x
+    
+    function read_string x
+    
+    call newline
+    
+    function print_string msg_Y
+    
+    function read_string y
+    
+    call newline
+    
+    function print_string x
+    function print_string msg_plus
+    function print_string y
+    function print_string msg_res
+    
+    function reverse x
+    function reverse y
     
     
-    lea ax,msg_Y
-    push ax
-    call print_string
+    cld
+    lea si,x
+    lea di,z
+    push si         ; arg1 = x
+    call count_length
+    mov cx,ax       ; cx = length(x)
+    xor ax,ax
+    xor bx,bx
+ll: lodsb
+    ; some action here
+    stosb
+    loop ll
     
-    lea ax,y
-    push ax        
-    call read_string    ; y = 'input'
     
-    lea ax,msg_newline
-    push ax
-    call print_string
+    lea si,y
+    push si
+    xor ax,ax
+    lea di,z
+l2: mov al,[si]
+    inc si
+    cmp al,0
+    je next_digit
+    sub al,'0'
+next_digit:
+    add al,[di]
+    add al,bl       ;add carry
+    xor bx,bx
+    cmp al,'0'+9
+    jbe no_carry
+    sub al,10
+    mov bl,1
+no_carry:
+    cmp al,'0'
+    jae store
+    add al,'0'
+store:
+    mov [di],al
+    inc di
+    cmp [si],0
+    jnz l2
+    cmp [di],0
+    jnz l2
+    cmp bl,0
+    jnz l2    
     
-     
-     
-    lea ax,x
-    push ax
-    call print_string
     
-    lea ax,msg_plus
-    push ax
-    call print_string
+    function reverse z
+    function print_string z   
     
-    lea ax,y
-    push ax
-    call print_string
-    
-    lea ax,msg_res
-    push ax
-    call print_string                                  
-    
-    lea ax,x
-    push ax
-    call reverse
+    call newline
                      
     jmp $
 
@@ -72,6 +102,42 @@ msg_newline db 10,13,0
 ;MY FUNCTIONS
 
 
+
+;count length of 0-terminated string
+count_length: 
+    push bp
+    mov bp,sp
+    push si
+    push bx
+     
+    mov si,[bp+4]           ; si = arg1
+    xor bx,bx               ; count number in bx
+next_byte_null_check:
+    cmp byte ptr[si+bx],0
+    je exit_count
+    inc bx
+    jmp next_byte_null_check
+    
+
+exit_count:    
+    mov ax,bx   ; ax = length(arg1)
+    pop bx
+    pop si
+    pop bp
+    ret 2
+    
+    
+
+newline:
+    push ax
+    lea ax,msg_newline
+    push ax
+    call print_string
+    pop ax
+    ret 
+
+
+
 ;revers 0-terminated data 1230 -> 3210
 reverse:
     push bp
@@ -84,7 +150,9 @@ next_data:
     inc bx
     jmp next_data
 exit_reverse:
-    mov di,[si+bx-1]
+    mov di,si           ;di = si + bx - 1
+    add di,bx            ;
+    dec di               ; di looks at last char
 swap_loop: 
     mov al,[di]
     mov cl,[si]
@@ -98,6 +166,7 @@ swap_loop:
 
 exit_swap:
     
+    pop bp
     ret 2
     
 
@@ -185,6 +254,9 @@ print_char:
 
 
 ;MY DATA
-    x db 64 dup(0)
-    y db 64 dup(0)
-    z db 64 dup(0)
+    x db MAXN dup(0)
+    y db MAXN dup(0)
+    z db MAXN dup(0)
+    reverse_x MAXN dup(0)
+    reverse_y MAXN dup(0)
+    reverse_z MAXN dup(0)
