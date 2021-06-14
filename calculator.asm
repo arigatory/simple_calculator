@@ -207,7 +207,7 @@ read_string:
     
     xor dx,dx
     xor bx,bx
-    mov cx,10
+    mov cx,MAXN
     mov si,[bp+4]
 l:
     call read_key
