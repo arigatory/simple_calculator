@@ -1,6 +1,15 @@
 MAXN equ 128
 
-function MACRO function_name,arg1
+function MACRO function_name, arg1
+    lea ax,arg1
+    push ax
+    call function_name
+ENDM
+
+
+function2 MACRO function_name, arg1, arg2
+    lea ax,arg2
+    push ax
     lea ax,arg1
     push ax
     call function_name
@@ -8,26 +17,31 @@ ENDM
 
 org 100h
     
-    function print_string msg_hello
-    
-    function print_string msg_x
-    
+;    function print_string msg_hello
+;    
+;    function print_string msg_x
+;    
     function read_string x
     
     call newline
     
-    function print_string msg_Y
-    
-    function read_string y
-    
-    call newline
-    
-    function print_string x
-    function print_string msg_plus
-    function print_string y
-    function print_string msg_res
-    
+;    function print_string msg_Y
+;    
+;    function read_string y
+;    
+;    call newline
+;    
+;    function print_string x
+;    function print_string msg_plus
+;    function print_string y
+;    function print_string msg_res
+;    
+;    
+    function2 make_raw x reverse_raw_x
     function reverse x
+ 
+    
+    
     function reverse y
     
     
@@ -170,6 +184,41 @@ exit_swap:
     ret 2
     
 
+;revers 0-terminated data "1230" -> <+-> 3,2,1,0, 0, 0, 0, 0,
+make_raw:
+    push bp
+    mov bp,sp
+    mov si,[bp+4]
+    mov di,[bp+6]
+    xor bx,bx               ; count number in bx
+    cmp [si],'-'            ; check if input string is negative
+    jne continue_count
+    mov [di-1],'-'          ; replace sign before the number <-,+> 123, + is default
+    inc si
+continue_count:
+    cmp byte ptr[si+bx],0
+    je exit_make_raw
+    inc bx
+    jmp continue_count
+exit_make_raw:
+    ;mov di,[bp+6]
+next_swap_raw: 
+    dec bx
+    mov al,[si+bx]
+    mov [di],al
+    inc di
+    cmp bx,0
+    je exit_make_raw_swap
+    jmp next_swap_raw
+
+exit_make_raw_swap:
+    
+    pop bp
+    ret 4
+
+
+
+
 
 print_string:
     push bp
@@ -260,3 +309,11 @@ print_char:
     reverse_x MAXN dup(0)
     reverse_y MAXN dup(0)
     reverse_z MAXN dup(0)
+    
+    sign_x db '+'
+    reverse_raw_x MAXN dup(0)
+    sign_y db '+'
+    reverse_raw_y MAXN dup(0)
+    sign_z db '+'
+    reverse_raw_z MAXN dup(0)
+    
