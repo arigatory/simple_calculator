@@ -17,88 +17,40 @@ ENDM
 
 org 100h
     
-;    function print_string msg_hello
-;    
-;    function print_string msg_x
-;    
+    function print_string msg_hello
+    
+    function print_string msg_x
+    
     function read_string x
     
     call newline
     
-;    function print_string msg_Y
-;    
-;    function read_string y
-;    
-;    call newline
-;    
-;    function print_string x
-;    function print_string msg_plus
-;    function print_string y
-;    function print_string msg_res
-;    
-;    
-    function2 make_raw x reverse_raw_x
-    function reverse x
- 
+    function print_string msg_Y
     
-    
-    function reverse y
-    
-    
-    cld
-    lea si,x
-    lea di,z
-    push si         ; arg1 = x
-    call count_length
-    mov cx,ax       ; cx = length(x)
-    xor ax,ax
-    xor bx,bx
-ll: lodsb
-    ; some action here
-    stosb
-    loop ll
-    
-    
-    lea si,y
-    push si
-    xor ax,ax
-    lea di,z
-l2: mov al,[si]
-    inc si
-    cmp al,0
-    je next_digit
-    sub al,'0'
-next_digit:
-    add al,[di]
-    add al,bl       ;add carry
-    xor bx,bx
-    cmp al,'0'+9
-    jbe no_carry
-    sub al,10
-    mov bl,1
-no_carry:
-    cmp al,'0'
-    jae store
-    add al,'0'
-store:
-    mov [di],al
-    inc di
-    cmp [si],0
-    jnz l2
-    cmp [di],0
-    jnz l2
-    cmp bl,0
-    jnz l2    
-    
-    
-    function reverse z
-    function print_string z   
+    function read_string y
     
     call newline
-                     
+    
+    function print_string x
+    function print_string msg_plus
+    function print_string y
+    function print_string msg_res
+    
+    
+    function2 make_raw x reverse_raw_x
+    function2 make_raw y reverse_raw_y
+    
+    function2 sum_raw reverse_raw_x reverse_raw_y
+    
+    function print_raw reverse_raw_x
+     
+    
     jmp $
+    RET
+    
 
     
+
     
     
 ;MY Strings
@@ -115,6 +67,98 @@ msg_newline db 10,13,0
 
 ;MY FUNCTIONS
 
+print_raw:
+    push bp
+    mov bp,sp
+    mov si,[bp+4]     ;si = raw
+    mov di, si
+    
+    next_raw_data:
+    cmp byte ptr[si],-1
+    je end_of_raw
+    inc si
+    jmp next_raw_data
+    
+         
+  end_of_raw:
+    dec si
+  print_next_raw:
+    cmp  si, di       ; check for zero to stop
+    je   print_last_raw         ;
+    mov  al, [si]     ; next get ASCII char.
+    add  al, '0'
+    
+    mov  ah, 0Eh      ; teletype function number.
+    int  10h          ; using interrupt to print a char in AL.
+
+    dec  si           ; advance index of string array.
+
+    jmp  print_next_raw    ; go back, and type another char.
+
+  print_last_raw:
+  
+    mov  al, [si]     ; next get ASCII char.
+    add  al, '0'
+    
+    mov  ah, 0Eh      ; teletype function number.
+    int  10h          ; using interrupt to print a char in AL.
+  
+    pop bp
+    ret 2                   ; return to caller.
+
+
+
+
+
+
+sum_raw:
+    push bp
+    mov bp,sp
+    mov si,[bp+4]           ; si = x
+    mov di,[bp+6]           ; di = y
+                   
+    
+    ;TODO + or -
+    
+    xor bx,bx       ;bx = carry 
+  next_sum: 
+    mov al,[si]
+    add al,[di]
+    add al,bl       ;add carry
+    xor bx,bx
+    cmp al,9
+    jbe no_carry
+    sub al,10
+    mov bl,1
+  no_carry:
+    mov [si],al
+    inc di
+    inc si
+    cmp byte ptr [si],-1
+    jne check_di
+    mov byte ptr [si],0
+check_di:
+    cmp byte ptr [di],-1
+    jne next_sum   
+    mov byte ptr [di],0
+    
+    cmp bl,0
+    jnz next_sum    
+    
+    ;remove leading zeros
+next_zero_check:    
+    cmp byte ptr[si],0
+    jne return_sum
+    mov byte ptr[si],-1
+    dec si
+    jmp next_zero_check
+
+return_sum:
+    pop bp
+    ret 4 
+
+
+
 
 
 ;count length of 0-terminated string
@@ -126,14 +170,14 @@ count_length:
      
     mov si,[bp+4]           ; si = arg1
     xor bx,bx               ; count number in bx
-next_byte_null_check:
+  next_byte_null_check:
     cmp byte ptr[si+bx],0
     je exit_count
     inc bx
     jmp next_byte_null_check
     
 
-exit_count:    
+  exit_count:    
     mov ax,bx   ; ax = length(arg1)
     pop bx
     pop si
@@ -152,22 +196,22 @@ newline:
 
 
 
-;revers 0-terminated data 1230 -> 3210
+;revers 0-terminated data 1230 -> 3210  in the same memory
 reverse:
     push bp
     mov bp,sp
     mov si,[bp+4]
     xor bx,bx               ; count number in bx
-next_data:
+  next_data:
     cmp byte ptr[si+bx],0
     je exit_reverse
     inc bx
     jmp next_data
-exit_reverse:
+  exit_reverse:
     mov di,si           ;di = si + bx - 1
     add di,bx            ;
     dec di               ; di looks at last char
-swap_loop: 
+  swap_loop: 
     mov al,[di]
     mov cl,[si]
     mov [si],al
@@ -178,13 +222,14 @@ swap_loop:
     jae exit_swap
     jmp swap_loop
 
-exit_swap:
+  exit_swap:
     
     pop bp
     ret 2
     
 
-;revers 0-terminated data "1230" -> <+-> 3,2,1,0, 0, 0, 0, 0,
+
+;revers 0-terminated data "1230" -> <+-> 3,2,1,-1, 0, 0, 0, 0, ...     in different memory
 make_raw:
     push bp
     mov bp,sp
@@ -195,24 +240,25 @@ make_raw:
     jne continue_count
     mov [di-1],'-'          ; replace sign before the number <-,+> 123, + is default
     inc si
-continue_count:
+  continue_count:
     cmp byte ptr[si+bx],0
     je exit_make_raw
     inc bx
     jmp continue_count
-exit_make_raw:
+  exit_make_raw:
     ;mov di,[bp+6]
-next_swap_raw: 
+  next_swap_raw: 
     dec bx
     mov al,[si+bx]
+    sub al,'0'
     mov [di],al
     inc di
     cmp bx,0
     je exit_make_raw_swap
     jmp next_swap_raw
 
-exit_make_raw_swap:
-    
+  exit_make_raw_swap:
+
     pop bp
     ret 4
 
@@ -224,7 +270,7 @@ print_string:
     push bp
     mov bp,sp
     mov si,[bp+4]     
-next_char:
+  next_char:
     cmp  byte ptr [si], 0    ; check for zero to stop
     je   stop         ;
 
@@ -237,7 +283,7 @@ next_char:
 
     jmp  next_char    ; go back, and type another char.
 
-stop:
+  stop:
     pop bp
     ret 2                   ; return to caller.
 
@@ -258,7 +304,7 @@ read_string:
     xor bx,bx
     mov cx,MAXN
     mov si,[bp+4]
-l:
+  l:
     call read_key
     cmp ax,1C0Dh  ; enter pressed
     je exit_l
@@ -272,7 +318,7 @@ l:
     call print_char ; prints one char from stack
     loop l
     
-exit_l:        
+  exit_l:        
     pop si
     pop ax
     pop cx
@@ -311,9 +357,9 @@ print_char:
     reverse_z MAXN dup(0)
     
     sign_x db '+'
-    reverse_raw_x MAXN dup(0)
+    reverse_raw_x MAXN dup(-1)
     sign_y db '+'
-    reverse_raw_y MAXN dup(0)
+    reverse_raw_y MAXN dup(-1)
     sign_z db '+'
-    reverse_raw_z MAXN dup(0)
+    reverse_raw_z MAXN dup(-1)
     
